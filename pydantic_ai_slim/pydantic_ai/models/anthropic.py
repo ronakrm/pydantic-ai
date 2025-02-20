@@ -1,6 +1,7 @@
 from __future__ import annotations as _annotations
 
 import io
+import json
 import warnings
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from contextlib import asynccontextmanager
@@ -300,6 +301,12 @@ class AnthropicModel(Model):
                 tool_choice['disable_parallel_tool_use'] = not allow_parallel_tool_calls
 
         system_prompt, anthropic_messages = await self._map_message(messages)
+        # HACK pydantic-ai does not currently support system prompts that are JSON arrays
+        # so we need to convert them to a list of TextBlockParam objects so the Anthropic client
+        # can accept the system prompt, potentially with cache controls or other objects.
+        if system_prompt.startswith('[') and system_prompt.endswith(']'):
+            system_prompt = json.loads(system_prompt)
+            system_prompt = [BetaTextBlockParam(**s) for s in system_prompt]
 
         try:
             extra_headers = model_settings.get('extra_headers', {})
