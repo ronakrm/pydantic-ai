@@ -331,6 +331,7 @@ class AnthropicModel(Model):
                 extra_headers=extra_headers,
                 extra_body=model_settings.get('extra_body'),
             )
+
         except APIStatusError as e:
             if (status_code := e.status_code) >= 400:
                 raise ModelHTTPError(status_code=status_code, model_name=self.model_name, body=e.body) from e
