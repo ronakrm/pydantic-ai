@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 
 import pytest
@@ -8,13 +7,6 @@ import pytest
 from pydantic_ai import Agent
 from pydantic_ai.models import override_allow_model_requests
 from pydantic_ai.settings import ModelSettings
-
-# Configure comprehensive logging
-logging.basicConfig(level=logging.DEBUG)
-
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logger.propagate = True
 
 
 @pytest.mark.skipif(not os.getenv('ANTHROPIC_API_KEY'), reason='ANTHROPIC_API_KEY not set')
