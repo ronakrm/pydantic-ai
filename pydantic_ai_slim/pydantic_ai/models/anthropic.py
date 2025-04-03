@@ -179,8 +179,6 @@ class AnthropicModel(Model):
                 )
             )
 
-            print('Got stop_reason max_tokens, retrying request with max_tokens retry prompt')
-
             return await self.request(messages, model_settings, model_request_parameters)
 
     @asynccontextmanager
