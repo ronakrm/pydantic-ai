@@ -220,7 +220,6 @@ class AnthropicModel(Model):
         )
         try:
             model_response = self._process_response(response)
-            model_response.usage.requests = 1
             return model_response
         except AnthropicMaxTokenStopReasonError as e:
             # hack append our error message to the last message
