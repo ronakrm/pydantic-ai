@@ -26,6 +26,7 @@ from ..messages import (
     BinaryImage,
     BuiltinToolCallPart,
     BuiltinToolReturnPart,
+    CachePoint,
     DocumentUrl,
     FilePart,
     FinishReason,
@@ -860,6 +861,9 @@ class OpenAIChatModel(Model):
                         )
                 elif isinstance(item, VideoUrl):  # pragma: no cover
                     raise NotImplementedError('VideoUrl is not supported for OpenAI')
+                elif isinstance(item, CachePoint):
+                    # OpenAI doesn't support prompt caching via CachePoint, so we filter it out
+                    pass
                 else:
                     assert_never(item)
         return chat.ChatCompletionUserMessageParam(role='user', content=content)
@@ -1673,6 +1677,9 @@ class OpenAIResponsesModel(Model):
                     )
                 elif isinstance(item, VideoUrl):  # pragma: no cover
                     raise NotImplementedError('VideoUrl is not supported for OpenAI.')
+                elif isinstance(item, CachePoint):
+                    # OpenAI doesn't support prompt caching via CachePoint, so we filter it out
+                    pass
                 else:
                     assert_never(item)
         return responses.EasyInputMessageParam(role='user', content=content)

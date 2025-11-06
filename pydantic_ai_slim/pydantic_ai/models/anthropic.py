@@ -19,6 +19,7 @@ from ..messages import (
     BinaryContent,
     BuiltinToolCallPart,
     BuiltinToolReturnPart,
+    CachePoint,
     DocumentUrl,
     FilePart,
     FinishReason,
@@ -58,6 +59,7 @@ try:
     from anthropic.types.beta import (
         BetaBase64PDFBlockParam,
         BetaBase64PDFSourceParam,
+        BetaCacheControlEphemeralParam,
         BetaCitationsDelta,
         BetaCodeExecutionTool20250522Param,
         BetaCodeExecutionToolResultBlock,
@@ -477,7 +479,10 @@ class AnthropicModel(Model):
                         system_prompt_parts.append(request_part.content)
                     elif isinstance(request_part, UserPromptPart):
                         async for content in self._map_user_prompt(request_part):
-                            user_content_params.append(content)
+                            if isinstance(content, CachePoint):
+                                self._add_cache_control_to_last_param(user_content_params)
+                            else:
+                                user_content_params.append(content)
                     elif isinstance(request_part, ToolReturnPart):
                         tool_result_block_param = BetaToolResultBlockParam(
                             tool_use_id=_guard_tool_call_id(t=request_part),
@@ -640,9 +645,25 @@ class AnthropicModel(Model):
         return system_prompt, anthropic_messages
 
     @staticmethod
+    def _add_cache_control_to_last_param(params: list[BetaContentBlockParam]) -> None:
+        """Add cache control to the last content block param."""
+        if not params:
+            raise UserError(
+                'CachePoint cannot be the first content in a user message - there must be previous content to attach the CachePoint to.'
+            )
+
+        # Only certain types support cache_control
+        cacheable_types = {'text', 'tool_use', 'server_tool_use', 'image', 'tool_result'}
+        if params[-1]['type'] not in cacheable_types:
+            raise UserError(f'Cache control not supported for param type: {params[-1]["type"]}')
+
+        # Add cache_control to the last param
+        params[-1]['cache_control'] = BetaCacheControlEphemeralParam(type='ephemeral')
+
+    @staticmethod
     async def _map_user_prompt(
         part: UserPromptPart,
-    ) -> AsyncGenerator[BetaContentBlockParam]:
+    ) -> AsyncGenerator[BetaContentBlockParam | CachePoint]:
         if isinstance(part.content, str):
             if part.content:  # Only yield non-empty text
                 yield BetaTextBlockParam(text=part.content, type='text')
@@ -651,6 +672,8 @@ class AnthropicModel(Model):
                 if isinstance(item, str):
                     if item:  # Only yield non-empty text
                         yield BetaTextBlockParam(text=item, type='text')
+                elif isinstance(item, CachePoint):
+                    yield item
                 elif isinstance(item, BinaryContent):
                     if item.is_image:
                         yield BetaImageBlockParam(
@@ -717,6 +740,8 @@ def _map_usage(
         key: value for key, value in response_usage.model_dump().items() if isinstance(value, int)
     }
 
+    # Note: genai-prices already extracts cache_creation_input_tokens and cache_read_input_tokens
+    # from the Anthropic response and maps them to cache_write_tokens and cache_read_tokens
     return usage.RequestUsage.extract(
         dict(model=model, usage=details),
         provider=provider,

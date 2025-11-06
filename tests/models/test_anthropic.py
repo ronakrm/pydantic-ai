@@ -20,6 +20,7 @@ from pydantic_ai import (
     BinaryContent,
     BuiltinToolCallPart,
     BuiltinToolReturnPart,
+    CachePoint,
     DocumentUrl,
     FinalResultEvent,
     ImageUrl,
@@ -290,6 +291,114 @@ async def test_async_request_prompt_caching(allow_model_requests: None):
     last_message = result.all_messages()[-1]
     assert isinstance(last_message, ModelResponse)
     assert last_message.cost().total_price == snapshot(Decimal('0.00002688'))
+
+
+async def test_cache_point_adds_cache_control(allow_model_requests: None):
+    """Test that CachePoint correctly adds cache_control to content blocks."""
+    c = completion_message(
+        [BetaTextBlock(text='response', type='text')],
+        usage=BetaUsage(input_tokens=3, output_tokens=5),
+    )
+    mock_client = MockAnthropic.create_mock(c)
+    m = AnthropicModel('claude-haiku-4-5', provider=AnthropicProvider(anthropic_client=mock_client))
+    agent = Agent(m)
+
+    # Test with CachePoint after text content
+    await agent.run(['Some context to cache', CachePoint(), 'Now the question'])
+
+    # Verify cache_control was added to the right content block
+    completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
+    messages = completion_kwargs['messages']
+    assert len(messages) == 1
+    assert messages[0]['role'] == 'user'
+    content = messages[0]['content']
+
+    # Should have 2 content blocks (text before CachePoint, text after CachePoint)
+    assert len(content) == 2
+    assert content[0]['type'] == 'text'
+    assert content[0]['text'] == 'Some context to cache'
+    # Cache control should be on the first block (before CachePoint)
+    assert 'cache_control' in content[0]
+    assert content[0]['cache_control'] == {'type': 'ephemeral'}
+
+    assert content[1]['type'] == 'text'
+    assert content[1]['text'] == 'Now the question'
+    # Second block should not have cache_control
+    assert 'cache_control' not in content[1]
+
+
+async def test_cache_point_multiple_markers(allow_model_requests: None):
+    """Test multiple CachePoint markers in a single prompt."""
+    c = completion_message(
+        [BetaTextBlock(text='response', type='text')],
+        usage=BetaUsage(input_tokens=3, output_tokens=5),
+    )
+    mock_client = MockAnthropic.create_mock(c)
+    m = AnthropicModel('claude-haiku-4-5', provider=AnthropicProvider(anthropic_client=mock_client))
+    agent = Agent(m)
+
+    await agent.run(['First chunk', CachePoint(), 'Second chunk', CachePoint(), 'Question'])
+
+    completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
+    content = completion_kwargs['messages'][0]['content']
+
+    assert len(content) == 3
+    # First block should have cache_control
+    assert 'cache_control' in content[0]
+    assert content[0]['cache_control'] == {'type': 'ephemeral'}
+    # Second block should have cache_control
+    assert 'cache_control' in content[1]
+    assert content[1]['cache_control'] == {'type': 'ephemeral'}
+    # Third block should not have cache_control
+    assert 'cache_control' not in content[2]
+
+
+async def test_cache_point_as_first_content_raises_error(allow_model_requests: None):
+    """Test that CachePoint as first content raises UserError."""
+    c = completion_message(
+        [BetaTextBlock(text='response', type='text')],
+        usage=BetaUsage(input_tokens=3, output_tokens=5),
+    )
+    mock_client = MockAnthropic.create_mock(c)
+    m = AnthropicModel('claude-haiku-4-5', provider=AnthropicProvider(anthropic_client=mock_client))
+    agent = Agent(m)
+
+    with pytest.raises(
+        UserError,
+        match='CachePoint cannot be the first content in a user message - there must be previous content to attach the CachePoint to.',
+    ):
+        await agent.run([CachePoint(), 'This should fail'])
+
+
+async def test_cache_point_with_image_content(allow_model_requests: None):
+    """Test CachePoint works with image content."""
+    c = completion_message(
+        [BetaTextBlock(text='response', type='text')],
+        usage=BetaUsage(input_tokens=3, output_tokens=5),
+    )
+    mock_client = MockAnthropic.create_mock(c)
+    m = AnthropicModel('claude-haiku-4-5', provider=AnthropicProvider(anthropic_client=mock_client))
+    agent = Agent(m)
+
+    await agent.run(
+        [
+            ImageUrl('https://example.com/image.jpg'),
+            CachePoint(),
+            'What is in this image?',
+        ]
+    )
+
+    completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
+    content = completion_kwargs['messages'][0]['content']
+
+    assert len(content) == 2
+    assert content[0]['type'] == 'image'
+    # Cache control should be on the image block
+    assert 'cache_control' in content[0]
+    assert content[0]['cache_control'] == {'type': 'ephemeral'}
+
+    assert content[1]['type'] == 'text'
+    assert 'cache_control' not in content[1]
 
 
 async def test_async_request_text_response(allow_model_requests: None):
