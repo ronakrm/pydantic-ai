@@ -654,11 +654,12 @@ class AnthropicModel(Model):
 
         # Only certain types support cache_control
         cacheable_types = {'text', 'tool_use', 'server_tool_use', 'image', 'tool_result'}
-        if params[-1]['type'] not in cacheable_types:
-            raise UserError(f'Cache control not supported for param type: {params[-1]["type"]}')
+        last_param = cast(dict[str, Any], params[-1])  # Cast to dict for mutation
+        if last_param['type'] not in cacheable_types:
+            raise UserError(f'Cache control not supported for param type: {last_param["type"]}')
 
         # Add cache_control to the last param
-        params[-1]['cache_control'] = BetaCacheControlEphemeralParam(type='ephemeral')
+        last_param['cache_control'] = BetaCacheControlEphemeralParam(type='ephemeral')
 
     @staticmethod
     async def _map_user_prompt(

@@ -19,6 +19,7 @@ from pydantic_ai import (
     BinaryContent,
     BuiltinToolCallPart,
     BuiltinToolReturnPart,
+    CachePoint,
     DocumentUrl,
     FinishReason,
     ImageUrl,
@@ -672,6 +673,9 @@ class BedrockConverseModel(Model):
                         content.append({'video': video})
                 elif isinstance(item, AudioUrl):  # pragma: no cover
                     raise NotImplementedError('Audio is not supported yet.')
+                elif isinstance(item, CachePoint):
+                    # Bedrock doesn't support prompt caching via CachePoint in this implementation
+                    pass
                 else:
                     assert_never(item)
         return [{'role': 'user', 'content': content}]
