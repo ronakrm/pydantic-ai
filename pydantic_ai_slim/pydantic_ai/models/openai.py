@@ -1602,7 +1602,7 @@ class OpenAIResponsesModel(Model):
         return response_format_param
 
     @staticmethod
-    async def _map_user_prompt(part: UserPromptPart) -> responses.EasyInputMessageParam:
+    async def _map_user_prompt(part: UserPromptPart) -> responses.EasyInputMessageParam:  # noqa: C901
         content: str | list[responses.ResponseInputContentParam]
         if isinstance(part.content, str):
             content = part.content
