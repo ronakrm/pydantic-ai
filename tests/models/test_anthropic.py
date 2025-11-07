@@ -401,6 +401,40 @@ async def test_cache_point_with_image_content(allow_model_requests: None):
     assert 'cache_control' not in content[1]
 
 
+async def test_cache_point_in_otel_message_parts(allow_model_requests: None):
+    """Test that CachePoint is handled correctly in otel message parts conversion."""
+    from pydantic_ai.agent import InstrumentationSettings
+    from pydantic_ai.messages import UserPromptPart
+
+    # Create a UserPromptPart with CachePoint
+    part = UserPromptPart(content=['text before', CachePoint(), 'text after'])
+
+    # Convert to otel message parts
+    settings = InstrumentationSettings(include_content=True)
+    otel_parts = part.otel_message_parts(settings)
+
+    # Should have 2 text parts, CachePoint is skipped
+    assert len(otel_parts) == 2
+    assert otel_parts[0]['type'] == 'text'
+    assert otel_parts[0].get('content') == 'text before'
+    assert otel_parts[1]['type'] == 'text'
+    assert otel_parts[1].get('content') == 'text after'
+
+
+def test_cache_control_unsupported_param_type():
+    """Test that cache control raises error for unsupported param types."""
+
+    from pydantic_ai.exceptions import UserError
+    from pydantic_ai.models.anthropic import AnthropicModel
+
+    # Create a list with an unsupported param type (document)
+    # We'll use a mock document block param
+    params: list[dict[str, Any]] = [{'type': 'document', 'source': {'data': 'test'}}]
+
+    with pytest.raises(UserError, match='Cache control not supported for param type: document'):
+        AnthropicModel._add_cache_control_to_last_param(params)  # type: ignore[arg-type]  # Testing internal method
+
+
 async def test_async_request_text_response(allow_model_requests: None):
     c = completion_message(
         [BetaTextBlock(text='world', type='text')],
