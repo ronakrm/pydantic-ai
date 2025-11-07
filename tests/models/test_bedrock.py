@@ -1511,3 +1511,19 @@ async def test_bedrock_streaming_error(allow_model_requests: None, bedrock_provi
     assert exc_info.value.status_code == 400
     assert exc_info.value.model_name == model_id
     assert exc_info.value.body.get('Error', {}).get('Message') == 'The provided model identifier is invalid.'  # type: ignore[union-attr]
+
+
+async def test_cache_point_filtering():
+    """Test that CachePoint is filtered out in Bedrock message mapping."""
+    from itertools import count
+    from pydantic_ai import CachePoint, UserPromptPart
+    from pydantic_ai.models.bedrock import BedrockConverseModel
+
+    # Test the static method directly
+    messages = await BedrockConverseModel._map_user_prompt(
+        UserPromptPart(content=['text', CachePoint()]),
+        count()
+    )
+    # CachePoint should be filtered out, message should still be valid
+    assert len(messages) == 1
+    assert messages[0]['role'] == 'user'

@@ -17,6 +17,7 @@ from pydantic_ai import (
     Agent,
     AudioUrl,
     BinaryContent,
+    CachePoint,
     DocumentUrl,
     ImageUrl,
     ModelHTTPError,
@@ -3054,3 +3055,15 @@ def test_deprecated_openai_model(openai_api_key: str):
 
         provider = OpenAIProvider(api_key=openai_api_key)
         OpenAIModel('gpt-4o', provider=provider)  # type: ignore[reportDeprecated]
+
+
+async def test_cache_point_filtering(allow_model_requests: None):
+    """Test that CachePoint is filtered out in OpenAI requests."""
+    c = completion_message(ChatCompletionMessage(content='response', role='assistant'))
+    mock_client = MockOpenAI.create_mock(c)
+    m = OpenAIChatModel('gpt-4o', provider=OpenAIProvider(openai_client=mock_client))
+    agent = Agent(m)
+
+    # Just verify that CachePoint doesn't cause an error - it should be filtered out
+    result = await agent.run(['text before', CachePoint(), 'text after'])
+    assert result.output == 'response'
