@@ -1520,10 +1520,7 @@ async def test_cache_point_filtering():
     from pydantic_ai.models.bedrock import BedrockConverseModel
 
     # Test the static method directly
-    messages = await BedrockConverseModel._map_user_prompt(
-        UserPromptPart(content=['text', CachePoint()]),
-        count()
-    )
+    messages = await BedrockConverseModel._map_user_prompt(UserPromptPart(content=['text', CachePoint()]), count())
     # CachePoint should be filtered out, message should still be valid
     assert len(messages) == 1
     assert messages[0]['role'] == 'user'
