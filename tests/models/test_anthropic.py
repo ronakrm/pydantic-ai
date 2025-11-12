@@ -4952,14 +4952,14 @@ async def test_anthropic_empty_content_filtering(env: TestEnv):
     messages_empty_string: list[ModelMessage] = [
         ModelRequest(parts=[UserPromptPart(content='')], kind='request'),
     ]
-    _, anthropic_messages = await model._map_message(messages_empty_string, ModelRequestParameters())  # type: ignore[attr-defined]
+    _, anthropic_messages = await model._map_message(messages_empty_string, ModelRequestParameters(), {})  # type: ignore[attr-defined]
     assert anthropic_messages == snapshot([])  # Empty content should be filtered out
 
     # Test _map_message with list containing empty strings in user prompt
     messages_mixed_content: list[ModelMessage] = [
         ModelRequest(parts=[UserPromptPart(content=['', 'Hello', '', 'World'])], kind='request'),
     ]
-    _, anthropic_messages = await model._map_message(messages_mixed_content, ModelRequestParameters())  # type: ignore[attr-defined]
+    _, anthropic_messages = await model._map_message(messages_mixed_content, ModelRequestParameters(), {})  # type: ignore[attr-defined]
     assert anthropic_messages == snapshot(
         [{'role': 'user', 'content': [{'text': 'Hello', 'type': 'text'}, {'text': 'World', 'type': 'text'}]}]
     )
@@ -4970,7 +4970,7 @@ async def test_anthropic_empty_content_filtering(env: TestEnv):
         ModelResponse(parts=[TextPart(content='')], kind='response'),  # Empty response
         ModelRequest(parts=[UserPromptPart(content='Hello')], kind='request'),
     ]
-    _, anthropic_messages = await model._map_message(messages, ModelRequestParameters())  # type: ignore[attr-defined]
+    _, anthropic_messages = await model._map_message(messages, ModelRequestParameters(), {})  # type: ignore[attr-defined]
     # The empty assistant message should be filtered out
     assert anthropic_messages == snapshot([{'role': 'user', 'content': [{'text': 'Hello', 'type': 'text'}]}])
 
@@ -4978,7 +4978,7 @@ async def test_anthropic_empty_content_filtering(env: TestEnv):
     messages_resp: list[ModelMessage] = [
         ModelResponse(parts=[TextPart(content=''), TextPart(content='')], kind='response'),
     ]
-    _, anthropic_messages = await model._map_message(messages_resp, ModelRequestParameters())  # type: ignore[attr-defined]
+    _, anthropic_messages = await model._map_message(messages_resp, ModelRequestParameters(), {})  # type: ignore[attr-defined]
     assert len(anthropic_messages) == 0  # No messages should be added
 
 
