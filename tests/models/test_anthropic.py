@@ -309,22 +309,7 @@ async def test_cache_point_adds_cache_control(allow_model_requests: None):
     # Verify cache_control was added to the right content block
     completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
     messages = completion_kwargs['messages']
-    assert len(messages) == 1
-    assert messages[0]['role'] == 'user'
-    content = messages[0]['content']
-
-    # Should have 2 content blocks (text before CachePoint, text after CachePoint)
-    assert len(content) == 2
-    assert content[0]['type'] == 'text'
-    assert content[0]['text'] == 'Some context to cache'
-    # Cache control should be on the first block (before CachePoint)
-    assert 'cache_control' in content[0]
-    assert content[0]['cache_control'] == {'type': 'ephemeral'}
-
-    assert content[1]['type'] == 'text'
-    assert content[1]['text'] == 'Now the question'
-    # Second block should not have cache_control
-    assert 'cache_control' not in content[1]
+    assert messages == snapshot()
 
 
 async def test_cache_point_multiple_markers(allow_model_requests: None):
@@ -342,15 +327,7 @@ async def test_cache_point_multiple_markers(allow_model_requests: None):
     completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
     content = completion_kwargs['messages'][0]['content']
 
-    assert len(content) == 3
-    # First block should have cache_control
-    assert 'cache_control' in content[0]
-    assert content[0]['cache_control'] == {'type': 'ephemeral'}
-    # Second block should have cache_control
-    assert 'cache_control' in content[1]
-    assert content[1]['cache_control'] == {'type': 'ephemeral'}
-    # Third block should not have cache_control
-    assert 'cache_control' not in content[2]
+    assert content == snapshot()
 
 
 async def test_cache_point_as_first_content_raises_error(allow_model_requests: None):
@@ -391,14 +368,7 @@ async def test_cache_point_with_image_content(allow_model_requests: None):
     completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
     content = completion_kwargs['messages'][0]['content']
 
-    assert len(content) == 2
-    assert content[0]['type'] == 'image'
-    # Cache control should be on the image block
-    assert 'cache_control' in content[0]
-    assert content[0]['cache_control'] == {'type': 'ephemeral'}
-
-    assert content[1]['type'] == 'text'
-    assert 'cache_control' not in content[1]
+    assert content == snapshot()
 
 
 async def test_cache_point_in_otel_message_parts(allow_model_requests: None):
@@ -414,11 +384,7 @@ async def test_cache_point_in_otel_message_parts(allow_model_requests: None):
     otel_parts = part.otel_message_parts(settings)
 
     # Should have 2 text parts, CachePoint is skipped
-    assert len(otel_parts) == 2
-    assert otel_parts[0]['type'] == 'text'
-    assert otel_parts[0].get('content') == 'text before'
-    assert otel_parts[1]['type'] == 'text'
-    assert otel_parts[1].get('content') == 'text after'
+    assert otel_parts == snapshot()
 
 
 def test_cache_control_unsupported_param_type():
@@ -433,6 +399,89 @@ def test_cache_control_unsupported_param_type():
 
     with pytest.raises(UserError, match='Cache control not supported for param type: document'):
         AnthropicModel._add_cache_control_to_last_param(params)  # type: ignore[arg-type]  # Testing internal method
+
+
+async def test_anthropic_cache_tools(allow_model_requests: None):
+    """Test that anthropic_cache_tools adds cache_control to last tool."""
+    c = completion_message(
+        [BetaTextBlock(text='Tool result', type='text')],
+        usage=BetaUsage(input_tokens=10, output_tokens=5),
+    )
+    mock_client = MockAnthropic.create_mock(c)
+    m = AnthropicModel('claude-haiku-4-5', provider=AnthropicProvider(anthropic_client=mock_client))
+    agent = Agent(
+        m,
+        system_prompt='Test system prompt',
+        model_settings=AnthropicModelSettings(anthropic_cache_tools=True),
+    )
+
+    @agent.tool_plain
+    def tool_one() -> str:
+        return 'one'
+
+    @agent.tool_plain
+    def tool_two() -> str:
+        return 'two'
+
+    await agent.run('test prompt')
+
+    # Verify cache_control was added to the last tool
+    completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
+    tools = completion_kwargs['tools']
+    assert tools == snapshot()
+
+
+async def test_anthropic_cache_instructions(allow_model_requests: None):
+    """Test that anthropic_cache_instructions adds cache_control to system prompt."""
+    c = completion_message(
+        [BetaTextBlock(text='Response', type='text')],
+        usage=BetaUsage(input_tokens=10, output_tokens=5),
+    )
+    mock_client = MockAnthropic.create_mock(c)
+    m = AnthropicModel('claude-haiku-4-5', provider=AnthropicProvider(anthropic_client=mock_client))
+    agent = Agent(
+        m,
+        system_prompt='This is a test system prompt with instructions.',
+        model_settings=AnthropicModelSettings(anthropic_cache_instructions=True),
+    )
+
+    await agent.run('test prompt')
+
+    # Verify system is a list with cache_control on last block
+    completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
+    system = completion_kwargs['system']
+    assert system == snapshot()
+
+
+async def test_anthropic_cache_tools_and_instructions(allow_model_requests: None):
+    """Test that both cache settings work together."""
+    c = completion_message(
+        [BetaTextBlock(text='Response', type='text')],
+        usage=BetaUsage(input_tokens=10, output_tokens=5),
+    )
+    mock_client = MockAnthropic.create_mock(c)
+    m = AnthropicModel('claude-haiku-4-5', provider=AnthropicProvider(anthropic_client=mock_client))
+    agent = Agent(
+        m,
+        system_prompt='System instructions to cache.',
+        model_settings=AnthropicModelSettings(
+            anthropic_cache_tools=True,
+            anthropic_cache_instructions=True,
+        ),
+    )
+
+    @agent.tool_plain
+    def my_tool(value: str) -> str:
+        return f'Result: {value}'
+
+    await agent.run('test prompt')
+
+    # Verify both have cache_control
+    completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
+    tools = completion_kwargs['tools']
+    system = completion_kwargs['system']
+    assert tools == snapshot()
+    assert system == snapshot()
 
 
 async def test_async_request_text_response(allow_model_requests: None):

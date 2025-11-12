@@ -618,6 +618,10 @@ class CachePoint:
 
     Can be inserted into UserPromptPart.content to mark cache boundaries.
     Models that don't support caching will filter these out.
+
+    Supported by:
+
+    - Anthropic
     """
 
     kind: Literal['cache-point'] = 'cache-point'

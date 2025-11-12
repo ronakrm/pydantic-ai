@@ -35,6 +35,10 @@ from pydantic_ai.agent import Agent
 from pydantic_ai.exceptions import ModelHTTPError, ModelRetry, UsageLimitExceeded
 from pydantic_ai.messages import AgentStreamEvent
 from pydantic_ai.models import ModelRequestParameters
+from pydantic_ai.models.bedrock import BedrockConverseModel, BedrockModelSettings
+from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIResponsesModelSettings
+from pydantic_ai.providers.bedrock import BedrockProvider
+from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.run import AgentRunResult, AgentRunResultEvent
 from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.usage import RequestUsage, RunUsage, UsageLimits
@@ -42,10 +46,7 @@ from pydantic_ai.usage import RequestUsage, RunUsage, UsageLimits
 from ..conftest import IsDatetime, IsInstance, IsStr, try_import
 
 with try_import() as imports_successful:
-    from pydantic_ai.models.bedrock import BedrockConverseModel, BedrockModelSettings
-    from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIResponsesModelSettings
-    from pydantic_ai.providers.bedrock import BedrockProvider
-    from pydantic_ai.providers.openai import OpenAIProvider
+    pass
 
 pytestmark = [
     pytest.mark.skipif(not imports_successful(), reason='bedrock not installed'),
@@ -1516,6 +1517,7 @@ async def test_bedrock_streaming_error(allow_model_requests: None, bedrock_provi
 async def test_cache_point_filtering():
     """Test that CachePoint is filtered out in Bedrock message mapping."""
     from itertools import count
+
     from pydantic_ai import CachePoint, UserPromptPart
     from pydantic_ai.models.bedrock import BedrockConverseModel
 

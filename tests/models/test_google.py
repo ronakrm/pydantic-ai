@@ -3154,6 +3154,7 @@ async def test_google_httpx_client_is_not_closed(allow_model_requests: None, gem
     assert result.output == snapshot('The capital of Mexico is **Mexico City**.')
 
 
+<<<<<<< HEAD
 def test_google_process_response_filters_empty_text_parts(google_provider: GoogleProvider):
     model = GoogleModel('gemini-2.5-pro', provider=google_provider)
     response = _generate_response_with_texts(response_id='resp-123', texts=['', 'first', '', 'second'])
