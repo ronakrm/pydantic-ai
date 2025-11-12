@@ -309,7 +309,17 @@ async def test_cache_point_adds_cache_control(allow_model_requests: None):
     # Verify cache_control was added to the right content block
     completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
     messages = completion_kwargs['messages']
-    assert messages == snapshot()
+    assert messages == snapshot(
+        [
+            {
+                'role': 'user',
+                'content': [
+                    {'text': 'Some context to cache', 'type': 'text', 'cache_control': {'type': 'ephemeral'}},
+                    {'text': 'Now the question', 'type': 'text'},
+                ],
+            }
+        ]
+    )
 
 
 async def test_cache_point_multiple_markers(allow_model_requests: None):
@@ -327,7 +337,13 @@ async def test_cache_point_multiple_markers(allow_model_requests: None):
     completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
     content = completion_kwargs['messages'][0]['content']
 
-    assert content == snapshot()
+    assert content == snapshot(
+        [
+            {'text': 'First chunk', 'type': 'text', 'cache_control': {'type': 'ephemeral'}},
+            {'text': 'Second chunk', 'type': 'text', 'cache_control': {'type': 'ephemeral'}},
+            {'text': 'Question', 'type': 'text'},
+        ]
+    )
 
 
 async def test_cache_point_as_first_content_raises_error(allow_model_requests: None):
@@ -368,7 +384,16 @@ async def test_cache_point_with_image_content(allow_model_requests: None):
     completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
     content = completion_kwargs['messages'][0]['content']
 
-    assert content == snapshot()
+    assert content == snapshot(
+        [
+            {
+                'source': {'type': 'url', 'url': 'https://example.com/image.jpg'},
+                'type': 'image',
+                'cache_control': {'type': 'ephemeral'},
+            },
+            {'text': 'What is in this image?', 'type': 'text'},
+        ]
+    )
 
 
 async def test_cache_point_in_otel_message_parts(allow_model_requests: None):
@@ -384,7 +409,9 @@ async def test_cache_point_in_otel_message_parts(allow_model_requests: None):
     otel_parts = part.otel_message_parts(settings)
 
     # Should have 2 text parts, CachePoint is skipped
-    assert otel_parts == snapshot()
+    assert otel_parts == snapshot(
+        [{'type': 'text', 'content': 'text before'}, {'type': 'text', 'content': 'text after'}]
+    )
 
 
 def test_cache_control_unsupported_param_type():
@@ -428,7 +455,21 @@ async def test_anthropic_cache_tools(allow_model_requests: None):
     # Verify cache_control was added to the last tool
     completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
     tools = completion_kwargs['tools']
-    assert tools == snapshot()
+    assert tools == snapshot(
+        [
+            {
+                'name': 'tool_one',
+                'description': '',
+                'input_schema': {'additionalProperties': False, 'properties': {}, 'type': 'object'},
+            },
+            {
+                'name': 'tool_two',
+                'description': '',
+                'input_schema': {'additionalProperties': False, 'properties': {}, 'type': 'object'},
+                'cache_control': {'type': 'ephemeral'},
+            },
+        ]
+    )
 
 
 async def test_anthropic_cache_instructions(allow_model_requests: None):
@@ -450,7 +491,15 @@ async def test_anthropic_cache_instructions(allow_model_requests: None):
     # Verify system is a list with cache_control on last block
     completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
     system = completion_kwargs['system']
-    assert system == snapshot()
+    assert system == snapshot(
+        [
+            {
+                'type': 'text',
+                'text': 'This is a test system prompt with instructions.',
+                'cache_control': {'type': 'ephemeral'},
+            }
+        ]
+    )
 
 
 async def test_anthropic_cache_tools_and_instructions(allow_model_requests: None):
@@ -480,8 +529,24 @@ async def test_anthropic_cache_tools_and_instructions(allow_model_requests: None
     completion_kwargs = get_mock_chat_completion_kwargs(mock_client)[0]
     tools = completion_kwargs['tools']
     system = completion_kwargs['system']
-    assert tools == snapshot()
-    assert system == snapshot()
+    assert tools == snapshot(
+        [
+            {
+                'name': 'my_tool',
+                'description': '',
+                'input_schema': {
+                    'additionalProperties': False,
+                    'properties': {'value': {'type': 'string'}},
+                    'required': ['value'],
+                    'type': 'object',
+                },
+                'cache_control': {'type': 'ephemeral'},
+            }
+        ]
+    )
+    assert system == snapshot(
+        [{'type': 'text', 'text': 'System instructions to cache.', 'cache_control': {'type': 'ephemeral'}}]
+    )
 
 
 async def test_async_request_text_response(allow_model_requests: None):
