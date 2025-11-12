@@ -86,24 +86,26 @@ Anthropic supports [prompt caching](https://docs.anthropic.com/en/docs/build-wit
 
 Insert a [`CachePoint`][pydantic_ai.messages.CachePoint] marker in your user messages to cache everything before it:
 
-```python
+```python {test="skip"}
 from pydantic_ai import Agent, CachePoint
 
 agent = Agent('anthropic:claude-sonnet-4-5')
 
-# Everything before CachePoint will be cached
-result = await agent.run([
-    "Long context that should be cached...",
-    CachePoint(),
-    "Your question here"
-])
+async def main():
+    # Everything before CachePoint will be cached
+    result = await agent.run([
+        'Long context that should be cached...',
+        CachePoint(),
+        'Your question here'
+    ])
+    print(result.output)
 ```
 
 ### 2. Cache System Instructions
 
 Use `anthropic_cache_instructions=True` to cache your system prompt:
 
-```python
+```python {test="skip"}
 from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModelSettings
 
@@ -115,14 +117,16 @@ agent = Agent(
     ),
 )
 
-result = await agent.run("Your question")
+async def main():
+    result = await agent.run('Your question')
+    print(result.output)
 ```
 
 ### 3. Cache Tool Definitions
 
 Use `anthropic_cache_tools=True` to cache your tool definitions:
 
-```python
+```python {test="skip"}
 from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModelSettings
 
@@ -136,17 +140,19 @@ agent = Agent(
 @agent.tool
 def my_tool() -> str:
     """Tool definition will be cached."""
-    return "result"
+    return 'result'
 
-result = await agent.run("Use the tool")
+async def main():
+    result = await agent.run('Use the tool')
+    print(result.output)
 ```
 
 ### Combining Cache Strategies
 
 You can combine all three caching strategies for maximum savings:
 
-```python
-from pydantic_ai import Agent, CachePoint
+```python {test="skip"}
+from pydantic_ai import Agent, CachePoint, RunContext
 from pydantic_ai.models.anthropic import AnthropicModelSettings
 
 agent = Agent(
@@ -159,29 +165,45 @@ agent = Agent(
 )
 
 @agent.tool
-def search_docs(query: str) -> str:
+def search_docs(ctx: RunContext, query: str) -> str:
     """Search documentation."""
-    return f"Results for {query}"
+    return f'Results for {query}'
 
-# First call - writes to cache
-result1 = await agent.run([
-    "Long context from documentation...",
-    CachePoint(),
-    "First question"
-])
+async def main():
+    # First call - writes to cache
+    result1 = await agent.run([
+        'Long context from documentation...',
+        CachePoint(),
+        'First question'
+    ])
 
-# Subsequent calls - read from cache (90% cost reduction)
-result2 = await agent.run([
-    "Long context from documentation...",  # Same content
-    CachePoint(),
-    "Second question"
-])
+    # Subsequent calls - read from cache (90% cost reduction)
+    result2 = await agent.run([
+        'Long context from documentation...',  # Same content
+        CachePoint(),
+        'Second question'
+    ])
+    print(f'First: {result1.output}')
+    print(f'Second: {result2.output}')
 ```
 
 Access cache usage statistics via `result.usage()`:
 
-```python
-usage = result.usage()
-print(f"Cache write tokens: {usage.cache_write_tokens}")
-print(f"Cache read tokens: {usage.cache_read_tokens}")
+```python {test="skip"}
+from pydantic_ai import Agent
+from pydantic_ai.models.anthropic import AnthropicModelSettings
+
+agent = Agent(
+    'anthropic:claude-sonnet-4-5',
+    system_prompt='Instructions...',
+    model_settings=AnthropicModelSettings(
+        anthropic_cache_instructions=True
+    ),
+)
+
+async def main():
+    result = await agent.run('Your question')
+    usage = result.usage()
+    print(f'Cache write tokens: {usage.cache_write_tokens}')
+    print(f'Cache read tokens: {usage.cache_read_tokens}')
 ```
