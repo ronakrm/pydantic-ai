@@ -1024,8 +1024,8 @@ async def test_cache_point_filtering():
     from pydantic_ai.models.huggingface import HuggingFaceModel
 
     # Test the static method directly
-    msg = await HuggingFaceModel._map_user_prompt(UserPromptPart(content=['text', CachePoint()]))
+    msg = await HuggingFaceModel._map_user_prompt(UserPromptPart(content=['text', CachePoint()]))  # pyright: ignore[reportPrivateUsage]
 
     # CachePoint should be filtered out
     assert msg['role'] == 'user'
-    assert len(msg['content']) == 1
+    assert len(msg['content']) == 1  # pyright: ignore[reportUnknownArgumentType]
