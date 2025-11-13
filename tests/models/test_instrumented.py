@@ -1643,7 +1643,7 @@ def test_cache_point_in_user_prompt():
     )
 
     # Test with multiple CachePoints
-    messages_multi = [
+    messages_multi: list[ModelMessage] = [
         ModelRequest(
             parts=[
                 UserPromptPart(content=['first', CachePoint(), 'second', CachePoint(), 'third']),
@@ -1664,7 +1664,7 @@ def test_cache_point_in_user_prompt():
     )
 
     # Test with CachePoint mixed with other content types
-    messages_mixed = [
+    messages_mixed: list[ModelMessage] = [
         ModelRequest(
             parts=[
                 UserPromptPart(
