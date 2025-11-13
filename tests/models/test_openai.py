@@ -3076,7 +3076,9 @@ async def test_cache_point_filtering(allow_model_requests: None):
 async def test_cache_point_filtering_responses_model():
     """Test that CachePoint is filtered out in OpenAI Responses API requests."""
     # Test the static method directly to trigger line 1680
-    msg = await OpenAIResponsesModel._map_user_prompt(UserPromptPart(content=['text before', CachePoint(), 'text after']))  # pyright: ignore[reportPrivateUsage]
+    msg = await OpenAIResponsesModel._map_user_prompt(
+        UserPromptPart(content=['text before', CachePoint(), 'text after'])
+    )  # pyright: ignore[reportPrivateUsage]
 
     # CachePoint should be filtered out, only text content should remain
     assert msg['role'] == 'user'
