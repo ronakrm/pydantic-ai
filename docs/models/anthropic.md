@@ -80,7 +80,7 @@ agent = Agent(model)
 
 ## Prompt Caching
 
-Anthropic supports [prompt caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) to reduce costs by caching parts of your prompts. PydanticAI provides three ways to use prompt caching:
+Anthropic supports [prompt caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) to reduce costs by caching parts of your prompts. Pydantic AI provides three ways to use prompt caching:
 
 ### 1. Cache User Messages with `CachePoint`
 
