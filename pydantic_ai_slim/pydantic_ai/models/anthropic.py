@@ -696,6 +696,7 @@ class AnthropicModel(Model):
             )
 
         # Only certain types support cache_control
+        # See https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#what-can-be-cached
         cacheable_types = {'text', 'tool_use', 'server_tool_use', 'image', 'tool_result'}
         last_param = cast(dict[str, Any], params[-1])  # Cast to dict for mutation
         if last_param['type'] not in cacheable_types:

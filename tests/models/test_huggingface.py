@@ -34,6 +34,7 @@ from pydantic_ai import (
     Agent,
     AudioUrl,
     BinaryContent,
+    CachePoint,
     DocumentUrl,
     ImageUrl,
     ModelRequest,
@@ -1020,9 +1021,6 @@ async def test_hf_model_thinking_part_iter(allow_model_requests: None, huggingfa
 
 async def test_cache_point_filtering():
     """Test that CachePoint is filtered out in HuggingFace message mapping."""
-    from pydantic_ai import CachePoint, UserPromptPart
-    from pydantic_ai.models.huggingface import HuggingFaceModel
-
     # Test the static method directly
     msg = await HuggingFaceModel._map_user_prompt(UserPromptPart(content=['text', CachePoint()]))  # pyright: ignore[reportPrivateUsage]
 
