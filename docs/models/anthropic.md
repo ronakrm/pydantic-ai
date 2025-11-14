@@ -103,7 +103,7 @@ async def main():
 
 ### 2. Cache System Instructions
 
-Use `anthropic_cache_instructions=True` to cache your system prompt:
+Enable the [`AnthropicModelSettings.anthropic_cache_instructions`][pydantic_ai.models.anthropic.AnthropicModelSettings.anthropic_cache_instructions] [model setting](../agents.md#model-run-settings) to cache your system prompt:
 
 ```python {test="skip"}
 from pydantic_ai import Agent
@@ -124,7 +124,7 @@ async def main():
 
 ### 3. Cache Tool Definitions
 
-Use `anthropic_cache_tool_definitions=True` to cache your tool definitions:
+Enable the [`AnthropicModelSettings.anthropic_cache_tool_definitions`][pydantic_ai.models.anthropic.AnthropicModelSettings.anthropic_cache_tool_definitions] [model setting](../agents.md#model-run-settings) to cache your tool definitions:
 
 ```python {test="skip"}
 from pydantic_ai import Agent
