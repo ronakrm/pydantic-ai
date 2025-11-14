@@ -124,7 +124,7 @@ async def main():
 
 ### 3. Cache Tool Definitions
 
-Use `anthropic_cache_tools=True` to cache your tool definitions:
+Use `anthropic_cache_tool_definitions=True` to cache your tool definitions:
 
 ```python {test="skip"}
 from pydantic_ai import Agent
@@ -133,7 +133,7 @@ from pydantic_ai.models.anthropic import AnthropicModelSettings
 agent = Agent(
     'anthropic:claude-sonnet-4-5',
     model_settings=AnthropicModelSettings(
-        anthropic_cache_tools=True
+        anthropic_cache_tool_definitions=True
     ),
 )
 
@@ -160,7 +160,7 @@ agent = Agent(
     system_prompt='Detailed instructions...',
     model_settings=AnthropicModelSettings(
         anthropic_cache_instructions=True,
-        anthropic_cache_tools=True,
+        anthropic_cache_tool_definitions=True,
     ),
 )
 

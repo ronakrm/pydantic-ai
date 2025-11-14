@@ -150,10 +150,10 @@ class AnthropicModelSettings(ModelSettings, total=False):
     See [the Anthropic docs](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking) for more information.
     """
 
-    anthropic_cache_tools: bool
-    """Whether to add cache_control to the last tool definition.
+    anthropic_cache_tool_definitions: bool
+    """Whether to add `cache_control` to the last tool definition.
 
-    When enabled, the last tool in the tools array will have cache_control set,
+    When enabled, the last tool in the `tools` array will have `cache_control` set,
     allowing Anthropic to cache tool definitions and reduce costs.
     See https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching for more information.
     """
@@ -437,8 +437,8 @@ class AnthropicModel(Model):
         ]
 
         # Add cache_control to the last tool if enabled
-        if tools and model_settings.get('anthropic_cache_tools'):
-            last_tool = cast(dict[str, Any], tools[-1])
+        if tools and model_settings.get('anthropic_cache_tool_definitions'):
+            last_tool = tools[-1]
             last_tool['cache_control'] = BetaCacheControlEphemeralParam(type='ephemeral')
 
         return tools
@@ -692,13 +692,16 @@ class AnthropicModel(Model):
         """
         if not params:
             raise UserError(
-                'CachePoint cannot be the first content in a user message - there must be previous content to attach the CachePoint to.'
+                'CachePoint cannot be the first content in a user message - there must be previous content to attach the CachePoint to. '
+                'To cache system instructions or tool definitions, use the `anthropic_cache_instructions` or `anthropic_cache_tool_definitions` settings instead.'
             )
 
         # Only certain types support cache_control
         # See https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#what-can-be-cached
         cacheable_types = {'text', 'tool_use', 'server_tool_use', 'image', 'tool_result'}
-        last_param = cast(dict[str, Any], params[-1])  # Cast to dict for mutation
+        # Cast needed because BetaContentBlockParam is a union including response Block types (Pydantic models)
+        # that don't support dict operations, even though at runtime we only have request Param types (TypedDicts).
+        last_param = cast(dict[str, Any], params[-1])
         if last_param['type'] not in cacheable_types:
             raise UserError(f'Cache control not supported for param type: {last_param["type"]}')
 

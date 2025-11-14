@@ -429,7 +429,7 @@ def test_cache_control_unsupported_param_type():
 
 
 async def test_anthropic_cache_tools(allow_model_requests: None):
-    """Test that anthropic_cache_tools adds cache_control to last tool."""
+    """Test that anthropic_cache_tool_definitions adds cache_control to last tool."""
     c = completion_message(
         [BetaTextBlock(text='Tool result', type='text')],
         usage=BetaUsage(input_tokens=10, output_tokens=5),
@@ -439,7 +439,7 @@ async def test_anthropic_cache_tools(allow_model_requests: None):
     agent = Agent(
         m,
         system_prompt='Test system prompt',
-        model_settings=AnthropicModelSettings(anthropic_cache_tools=True),
+        model_settings=AnthropicModelSettings(anthropic_cache_tool_definitions=True),
     )
 
     @agent.tool_plain
@@ -514,7 +514,7 @@ async def test_anthropic_cache_tools_and_instructions(allow_model_requests: None
         m,
         system_prompt='System instructions to cache.',
         model_settings=AnthropicModelSettings(
-            anthropic_cache_tools=True,
+            anthropic_cache_tool_definitions=True,
             anthropic_cache_instructions=True,
         ),
     )
