@@ -82,74 +82,11 @@ agent = Agent(model)
 
 Anthropic supports [prompt caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) to reduce costs by caching parts of your prompts. Pydantic AI provides three ways to use prompt caching:
 
-### 1. Cache User Messages with `CachePoint`
+1. **Cache User Messages with [`CachePoint`][pydantic_ai.messages.CachePoint]**: Insert a `CachePoint` marker in your user messages to cache everything before it
+2. **Cache System Instructions**: Enable the [`AnthropicModelSettings.anthropic_cache_instructions`][pydantic_ai.models.anthropic.AnthropicModelSettings.anthropic_cache_instructions] [model setting](../agents.md#model-run-settings) to cache your system prompt
+3. **Cache Tool Definitions**: Enable the [`AnthropicModelSettings.anthropic_cache_tool_definitions`][pydantic_ai.models.anthropic.AnthropicModelSettings.anthropic_cache_tool_definitions] [model setting](../agents.md#model-run-settings) to cache your tool definitions
 
-Insert a [`CachePoint`][pydantic_ai.messages.CachePoint] marker in your user messages to cache everything before it:
-
-```python {test="skip"}
-from pydantic_ai import Agent, CachePoint
-
-agent = Agent('anthropic:claude-sonnet-4-5')
-
-async def main():
-    # Everything before CachePoint will be cached
-    result = await agent.run([
-        'Long context that should be cached...',
-        CachePoint(),
-        'Your question here'
-    ])
-    print(result.output)
-```
-
-### 2. Cache System Instructions
-
-Enable the [`AnthropicModelSettings.anthropic_cache_instructions`][pydantic_ai.models.anthropic.AnthropicModelSettings.anthropic_cache_instructions] [model setting](../agents.md#model-run-settings) to cache your system prompt:
-
-```python {test="skip"}
-from pydantic_ai import Agent
-from pydantic_ai.models.anthropic import AnthropicModelSettings
-
-agent = Agent(
-    'anthropic:claude-sonnet-4-5',
-    system_prompt='Long detailed instructions...',
-    model_settings=AnthropicModelSettings(
-        anthropic_cache_instructions=True
-    ),
-)
-
-async def main():
-    result = await agent.run('Your question')
-    print(result.output)
-```
-
-### 3. Cache Tool Definitions
-
-Enable the [`AnthropicModelSettings.anthropic_cache_tool_definitions`][pydantic_ai.models.anthropic.AnthropicModelSettings.anthropic_cache_tool_definitions] [model setting](../agents.md#model-run-settings) to cache your tool definitions:
-
-```python {test="skip"}
-from pydantic_ai import Agent
-from pydantic_ai.models.anthropic import AnthropicModelSettings
-
-agent = Agent(
-    'anthropic:claude-sonnet-4-5',
-    model_settings=AnthropicModelSettings(
-        anthropic_cache_tool_definitions=True
-    ),
-)
-
-@agent.tool
-def my_tool() -> str:
-    """Tool definition will be cached."""
-    return 'result'
-
-async def main():
-    result = await agent.run('Use the tool')
-    print(result.output)
-```
-
-### Combining Cache Strategies
-
-You can combine all three caching strategies for maximum savings:
+You can combine all three strategies for maximum savings:
 
 ```python {test="skip"}
 from pydantic_ai import Agent, CachePoint, RunContext
