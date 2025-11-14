@@ -159,9 +159,9 @@ class AnthropicModelSettings(ModelSettings, total=False):
     """
 
     anthropic_cache_instructions: bool
-    """Whether to add cache_control to the last system prompt block.
+    """Whether to add `cache_control` to the last system prompt block.
 
-    When enabled, the last system prompt will have cache_control set,
+    When enabled, the last system prompt will have `cache_control` set,
     allowing Anthropic to cache system instructions and reduce costs.
     See https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching for more information.
     """
