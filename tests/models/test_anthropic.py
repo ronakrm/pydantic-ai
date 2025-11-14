@@ -443,11 +443,11 @@ async def test_anthropic_cache_tools(allow_model_requests: None):
     )
 
     @agent.tool_plain
-    def tool_one() -> str:
+    def tool_one() -> str:  # pragma: no cover
         return 'one'
 
     @agent.tool_plain
-    def tool_two() -> str:
+    def tool_two() -> str:  # pragma: no cover
         return 'two'
 
     await agent.run('test prompt')
@@ -520,7 +520,7 @@ async def test_anthropic_cache_tools_and_instructions(allow_model_requests: None
     )
 
     @agent.tool_plain
-    def my_tool(value: str) -> str:
+    def my_tool(value: str) -> str:  # pragma: no cover
         return f'Result: {value}'
 
     await agent.run('test prompt')
