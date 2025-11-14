@@ -674,7 +674,7 @@ class BedrockConverseModel(Model):
                 elif isinstance(item, AudioUrl):  # pragma: no cover
                     raise NotImplementedError('Audio is not supported yet.')
                 elif isinstance(item, CachePoint):
-                    # Bedrock doesn't support prompt caching via CachePoint in this implementation
+                    # Bedrock support has not been implemented yet: https://github.com/pydantic/pydantic-ai/issues/3418
                     pass
                 else:
                     assert_never(item)
